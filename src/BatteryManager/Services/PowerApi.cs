@@ -17,7 +17,7 @@ public sealed class PowerApi
             return PowerReading.Empty;
         }
 
-        var batteryData = TryReadBatteryData();
+        var batteryData = ReadBatteryData();
         var batteryPresent = state.BatteryPresent;
 
         double? batteryPercent = null;
@@ -38,7 +38,9 @@ public sealed class PowerApi
 
         var estimatedTime = state.EstimatedTime > 0 && state.EstimatedTime < uint.MaxValue
             ? TimeSpan.FromSeconds(state.EstimatedTime)
-            : EstimateTimeRemaining(state, systemPowerWatts);
+            : batteryData.EstimatedRuntime
+                ?? batteryData.Win32EstimatedRuntime
+                ?? EstimateTimeRemaining(state, systemPowerWatts);
 
         return new PowerReading(
             batteryPresent,
@@ -56,7 +58,9 @@ public sealed class PowerApi
             batteryData.CycleCount,
             batteryData.HasEstimatedRate,
             batteryData.RateSource,
-            batteryData.DetailText);
+            batteryData.DetailText,
+            batteryData.RemainingCapacityMilliwattHours,
+            batteryData.FullChargedCapacityMilliwattHours);
     }
 
     private static TimeSpan? EstimateTimeRemaining(SYSTEM_BATTERY_STATE state, double? systemPowerWatts)
@@ -69,40 +73,95 @@ public sealed class PowerApi
         return TimeSpan.FromHours(state.RemainingCapacity / 1000d / systemPowerWatts.Value);
     }
 
-    private static BatteryData TryReadBatteryData()
+    private static BatteryData ReadBatteryData()
+    {
+        var designedCapacity = QueryWmiValue(@"root\WMI", "SELECT DesignedCapacity FROM BatteryStaticData", "DesignedCapacity");
+        var fullChargeCapacity = QueryWmiValue(@"root\WMI", "SELECT FullChargedCapacity FROM BatteryFullChargedCapacity", "FullChargedCapacity");
+        var cycleCount = QueryWmiInt(@"root\WMI", "SELECT CycleCount FROM BatteryCycleCount", "CycleCount")
+            ?? QueryWmiInt(@"root\WMI", "SELECT CycleCount FROM BatteryStaticData", "CycleCount");
+        var batteryTemperature = QueryWmiTemperature(@"root\WMI", "SELECT Temperature FROM BatteryTemperature", "Temperature");
+        var deviceTemperature = QueryFormattedDeviceTemperature();
+        var runtimeSeconds = QueryWmiValue(@"root\WMI", "SELECT EstimatedRuntime FROM BatteryRuntime", "EstimatedRuntime");
+        var remainingCapacity = QueryWmiValue(@"root\WMI", "SELECT RemainingCapacity FROM BatteryStatus", "RemainingCapacity");
+        var win32EstimatedRuntime = QueryWmiValue(@"root\\cimv2", "SELECT EstimatedRunTime FROM Win32_Battery", "EstimatedRunTime");
+
+        var healthPercent = designedCapacity > 0 && fullChargeCapacity > 0
+            ? fullChargeCapacity / designedCapacity * 100d
+            : null;
+
+        var detail = batteryTemperature is not null
+            ? "Windows battery telemetry"
+            : deviceTemperature is not null
+                ? "Windows battery telemetry with system thermal fallback"
+                : "Windows battery telemetry";
+
+        return new BatteryData(
+            healthPercent,
+            batteryTemperature ?? deviceTemperature,
+            cycleCount,
+            runtimeSeconds > 0 ? TimeSpan.FromSeconds(runtimeSeconds.Value) : null,
+            win32EstimatedRuntime > 0 ? TimeSpan.FromMinutes(win32EstimatedRuntime.Value) : null,
+            remainingCapacity,
+            fullChargeCapacity,
+            false,
+            "CallNtPowerInformation",
+            detail);
+    }
+
+    private static double? QueryWmiValue(string scopePath, string query, string propertyName)
     {
         try
         {
-            using var staticSearcher = new ManagementObjectSearcher(@"root\WMI", "SELECT DesignedCapacity, CycleCount FROM BatteryStaticData");
-            using var staticResults = staticSearcher.Get();
-            var staticData = staticResults.Cast<ManagementObject>().FirstOrDefault();
-
-            using var fullSearcher = new ManagementObjectSearcher(@"root\WMI", "SELECT FullChargedCapacity FROM BatteryFullChargedCapacity");
-            using var fullResults = fullSearcher.Get();
-            var fullData = fullResults.Cast<ManagementObject>().FirstOrDefault();
-
-            using var tempSearcher = new ManagementObjectSearcher(@"root\WMI", "SELECT Temperature FROM BatteryTemperature");
-            using var tempResults = tempSearcher.Get();
-            var tempData = tempResults.Cast<ManagementObject>().FirstOrDefault();
-
-            var designedCapacity = ToDouble(staticData?["DesignedCapacity"]);
-            var fullChargeCapacity = ToDouble(fullData?["FullChargedCapacity"]);
-            var healthPercent = designedCapacity > 0 && fullChargeCapacity > 0
-                ? fullChargeCapacity / designedCapacity * 100d
-                : null;
-
-            var cycleCount = ToNullableInt(staticData?["CycleCount"]);
-            var temperatureRaw = ToDouble(tempData?["Temperature"]);
-            double? temperatureCelsius = temperatureRaw > 0
-                ? (temperatureRaw / 10d) - 273.15d
-                : null;
-
-            return new BatteryData(healthPercent, temperatureCelsius, cycleCount, false, "CallNtPowerInformation", "Windows battery telemetry");
+            using var searcher = new ManagementObjectSearcher(scopePath, query);
+            using var results = searcher.Get();
+            var data = results.Cast<ManagementObject>().FirstOrDefault();
+            return ToDouble(data?[propertyName]);
         }
         catch
         {
-            return new BatteryData(null, null, null, false, "CallNtPowerInformation", "Extended battery telemetry unavailable");
+            return null;
         }
+    }
+
+    private static int? QueryWmiInt(string scopePath, string query, string propertyName)
+    {
+        try
+        {
+            using var searcher = new ManagementObjectSearcher(scopePath, query);
+            using var results = searcher.Get();
+            var data = results.Cast<ManagementObject>().FirstOrDefault();
+            return ToNullableInt(data?[propertyName]);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static double? QueryWmiTemperature(string scopePath, string query, string propertyName)
+    {
+        var rawValue = QueryWmiValue(scopePath, query, propertyName);
+        return rawValue > 0 ? (rawValue / 10d) - 273.15d : null;
+    }
+
+    private static double? QueryFormattedDeviceTemperature()
+    {
+        var thermalZoneTemperature = QueryWmiValue(
+            @"root\cimv2",
+            "SELECT Temperature, HighPrecisionTemperature FROM Win32_PerfFormattedData_Counters_ThermalZoneInformation",
+            "HighPrecisionTemperature");
+
+        if (thermalZoneTemperature > 0)
+        {
+            return (thermalZoneTemperature.Value / 10d) - 273.15d;
+        }
+
+        thermalZoneTemperature = QueryWmiValue(
+            @"root\cimv2",
+            "SELECT Temperature FROM Win32_PerfFormattedData_Counters_ThermalZoneInformation",
+            "Temperature");
+
+        return thermalZoneTemperature > 0 ? thermalZoneTemperature - 273.15d : null;
     }
 
     private static double? ToDouble(object? value)
@@ -169,6 +228,10 @@ public sealed class PowerApi
         double? HealthPercent,
         double? TemperatureCelsius,
         int? CycleCount,
+        TimeSpan? EstimatedRuntime,
+        TimeSpan? Win32EstimatedRuntime,
+        double? RemainingCapacityMilliwattHours,
+        double? FullChargedCapacityMilliwattHours,
         bool HasEstimatedRate,
         string RateSource,
         string DetailText);
@@ -190,7 +253,9 @@ public sealed record PowerReading(
     int? CycleCount,
     bool AnyWattsEstimated,
     string RateSource,
-    string DetailText)
+    string DetailText,
+    double? RemainingCapacityMilliwattHours,
+    double? FullChargedCapacityMilliwattHours)
 {
     public static PowerReading Empty { get; } = new(
         false,
@@ -208,5 +273,7 @@ public sealed record PowerReading(
         null,
         false,
         "Unavailable",
-        "Battery telemetry is unavailable on this device.");
+        "Battery telemetry is unavailable on this device.",
+        null,
+        null);
 }

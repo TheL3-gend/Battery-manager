@@ -13,6 +13,7 @@ public sealed class MainViewModel : BindableBase, IDisposable
     private readonly AppSettings _settings;
     private readonly SettingsService _settingsService;
     private readonly BatteryMonitorService _batteryMonitorService;
+    private readonly BatteryHistoryService _batteryHistoryService;
     private readonly ChargeLimitCoordinator _chargeLimitCoordinator;
     private readonly HistoryBuffer _batteryPercentHistory = new(90);
     private readonly HistoryBuffer _chargePowerHistory = new(90);
@@ -21,6 +22,7 @@ public sealed class MainViewModel : BindableBase, IDisposable
     private readonly RelayCommand _enableTopUpCommand;
     private readonly RelayCommand _closeCommand;
     private readonly RelayCommand _dismissInfoBannerCommand;
+    private readonly RelayCommand _setBatteryHistoryPeriodCommand;
     private BatterySnapshot? _latestSnapshot;
     private bool _allowWindowClose;
     private bool _chargeLimitReachedNotified;
@@ -54,18 +56,21 @@ public sealed class MainViewModel : BindableBase, IDisposable
     private string _liveUpdateNote = "Collecting data from Windows power telemetry.";
     private bool _isInfoBannerVisible = true;
     private double _batteryPercentValue;
+    private BatteryHistoryPeriod _selectedBatteryHistoryPeriod = BatteryHistoryPeriod.Day;
 
     public MainViewModel(
         Dispatcher dispatcher,
         AppSettings settings,
         SettingsService settingsService,
         BatteryMonitorService batteryMonitorService,
+        BatteryHistoryService batteryHistoryService,
         ChargeLimitCoordinator chargeLimitCoordinator)
     {
         _dispatcher = dispatcher;
         _settings = settings;
         _settingsService = settingsService;
         _batteryMonitorService = batteryMonitorService;
+        _batteryHistoryService = batteryHistoryService;
         _chargeLimitCoordinator = chargeLimitCoordinator;
 
         _useDarkMode = settings.UseDarkMode;
@@ -80,10 +85,12 @@ public sealed class MainViewModel : BindableBase, IDisposable
         BatteryPercentHistory = _batteryPercentHistory.Points;
         ChargePowerHistory = _chargePowerHistory.Points;
         SystemPowerHistory = _systemPowerHistory.Points;
+        BatteryUsageHistory = [];
 
         _applyChargeLimitCommand = new RelayCommand(async value => await ApplyChargeLimitAsync(value), _ => ChargeLimitSupported);
         _enableTopUpCommand = new RelayCommand(async () => await EnableTopUpAsync(), () => TopUpSupported);
         _dismissInfoBannerCommand = new RelayCommand(() => IsInfoBannerVisible = false);
+        _setBatteryHistoryPeriodCommand = new RelayCommand(SetBatteryHistoryPeriod);
         _closeCommand = new RelayCommand(() =>
         {
             PrepareForExit();
@@ -98,10 +105,12 @@ public sealed class MainViewModel : BindableBase, IDisposable
     public ObservableCollection<HistoricalPoint> BatteryPercentHistory { get; }
     public ObservableCollection<HistoricalPoint> ChargePowerHistory { get; }
     public ObservableCollection<HistoricalPoint> SystemPowerHistory { get; }
+    public ObservableCollection<BatteryHistoryEntry> BatteryUsageHistory { get; }
 
     public ICommand ApplyChargeLimitCommand => _applyChargeLimitCommand;
     public ICommand EnableTopUpCommand => _enableTopUpCommand;
     public ICommand DismissInfoBannerCommand => _dismissInfoBannerCommand;
+    public ICommand SetBatteryHistoryPeriodCommand => _setBatteryHistoryPeriodCommand;
     public ICommand CloseCommand => _closeCommand;
 
     public bool ShouldKeepRunningInBackground => BackgroundMonitoringEnabled;
@@ -109,6 +118,27 @@ public sealed class MainViewModel : BindableBase, IDisposable
     public bool ChargeLimitSupported => _chargeLimitCoordinator.Compatibility.ChargeLimitSupported;
     public bool TopUpSupported => _chargeLimitCoordinator.Compatibility.TopUpSupported;
     public string AppTitle => "Battery Manager";
+    public bool IsDayHistorySelected => SelectedBatteryHistoryPeriod == BatteryHistoryPeriod.Day;
+    public bool IsWeekHistorySelected => SelectedBatteryHistoryPeriod == BatteryHistoryPeriod.Week;
+    public string BatteryHistoryCaption => SelectedBatteryHistoryPeriod == BatteryHistoryPeriod.Day
+        ? "Last 24 hours"
+        : "Last 7 days";
+    public string BatteryUsageCurrentLabel => _latestSnapshot?.BatteryPercent is null ? "--" : $"{_latestSnapshot.BatteryPercent:0}%";
+    public string BatteryUsageLowLabel => BatteryUsageHistory.Count == 0 ? "--" : $"{BatteryUsageHistory.Min(point => point.BatteryPercent):0}%";
+    public string BatteryUsageHighLabel => BatteryUsageHistory.Count == 0 ? "--" : $"{BatteryUsageHistory.Max(point => point.BatteryPercent):0}%";
+    public string BatteryUsageStateLabel => _latestSnapshot is null
+        ? "Waiting for telemetry"
+        : _latestSnapshot.IsCharging
+            ? "Charging now"
+            : _latestSnapshot.IsOnAcPower
+                ? "Plugged in"
+                : "On battery";
+    public string BatteryUsageFlowLabel => ChargeWattsText;
+    public string BatteryUsageAxisStartLabel => FormatAxisLabel(0);
+    public string BatteryUsageAxisQuarterLabel => FormatAxisLabel(0.25);
+    public string BatteryUsageAxisMidLabel => FormatAxisLabel(0.5);
+    public string BatteryUsageAxisThreeQuarterLabel => FormatAxisLabel(0.75);
+    public string BatteryUsageAxisEndLabel => FormatAxisLabel(1);
 
     public bool IsInfoBannerVisible
     {
@@ -345,6 +375,26 @@ public sealed class MainViewModel : BindableBase, IDisposable
         private set => SetProperty(ref _liveUpdateNote, value);
     }
 
+    public BatteryHistoryPeriod SelectedBatteryHistoryPeriod
+    {
+        get => _selectedBatteryHistoryPeriod;
+        private set
+        {
+            if (SetProperty(ref _selectedBatteryHistoryPeriod, value))
+            {
+                RaisePropertyChanged(nameof(IsDayHistorySelected));
+                RaisePropertyChanged(nameof(IsWeekHistorySelected));
+                RaisePropertyChanged(nameof(BatteryHistoryCaption));
+                RaisePropertyChanged(nameof(BatteryUsageAxisStartLabel));
+                RaisePropertyChanged(nameof(BatteryUsageAxisQuarterLabel));
+                RaisePropertyChanged(nameof(BatteryUsageAxisMidLabel));
+                RaisePropertyChanged(nameof(BatteryUsageAxisThreeQuarterLabel));
+                RaisePropertyChanged(nameof(BatteryUsageAxisEndLabel));
+                RefreshBatteryLevelHistory();
+            }
+        }
+    }
+
     public void Initialize()
     {
         ThemeManager.Apply(App.Current.Resources, UseDarkMode);
@@ -361,6 +411,7 @@ public sealed class MainViewModel : BindableBase, IDisposable
         TopUpAvailabilityText = compatibility.TopUpSupported
             ? "Top Up supported by the active provider"
             : "Top Up requires hardware-level provider support";
+        RefreshBatteryLevelHistory();
 
         _batteryMonitorService.SnapshotUpdated += OnSnapshotUpdated;
         RestartMonitoring();
@@ -428,6 +479,16 @@ public sealed class MainViewModel : BindableBase, IDisposable
         _batteryPercentHistory.Add(snapshot.Timestamp, snapshot.BatteryPercent);
         _chargePowerHistory.Add(snapshot.Timestamp, snapshot.ChargingPowerWatts);
         _systemPowerHistory.Add(snapshot.Timestamp, snapshot.SystemPowerWatts);
+        _batteryHistoryService.Append(snapshot.Timestamp, snapshot.BatteryPercent, snapshot.IsCharging);
+        RefreshBatteryLevelHistory();
+        RaisePropertyChanged(nameof(BatteryUsageCurrentLabel));
+        RaisePropertyChanged(nameof(BatteryUsageStateLabel));
+        RaisePropertyChanged(nameof(BatteryUsageFlowLabel));
+        RaisePropertyChanged(nameof(BatteryUsageAxisStartLabel));
+        RaisePropertyChanged(nameof(BatteryUsageAxisQuarterLabel));
+        RaisePropertyChanged(nameof(BatteryUsageAxisMidLabel));
+        RaisePropertyChanged(nameof(BatteryUsageAxisThreeQuarterLabel));
+        RaisePropertyChanged(nameof(BatteryUsageAxisEndLabel));
 
         var activeTargetLimit = UseCustomChargeLimit ? CustomChargeLimit : SelectedChargeLimit;
 
@@ -466,6 +527,45 @@ public sealed class MainViewModel : BindableBase, IDisposable
         {
             _highTemperatureNotified = false;
         }
+    }
+
+    private void SetBatteryHistoryPeriod(object? parameter)
+    {
+        if (parameter is null)
+        {
+            return;
+        }
+
+        var value = parameter.ToString();
+        SelectedBatteryHistoryPeriod = value?.Equals("Week", StringComparison.OrdinalIgnoreCase) == true
+            ? BatteryHistoryPeriod.Week
+            : BatteryHistoryPeriod.Day;
+    }
+
+    private void RefreshBatteryLevelHistory()
+    {
+        var entries = _batteryHistoryService.GetEntries(SelectedBatteryHistoryPeriod);
+        BatteryUsageHistory.Clear();
+
+        foreach (var entry in entries)
+        {
+            BatteryUsageHistory.Add(entry);
+        }
+
+        RaisePropertyChanged(nameof(BatteryUsageLowLabel));
+        RaisePropertyChanged(nameof(BatteryUsageHighLabel));
+    }
+
+    private string FormatAxisLabel(double progress)
+    {
+        var range = SelectedBatteryHistoryPeriod == BatteryHistoryPeriod.Day
+            ? TimeSpan.FromHours(24)
+            : TimeSpan.FromDays(7);
+
+        var axisTime = DateTime.Now - range + TimeSpan.FromTicks((long)(range.Ticks * progress));
+        return SelectedBatteryHistoryPeriod == BatteryHistoryPeriod.Day
+            ? axisTime.ToString("HH:mm")
+            : axisTime.ToString("dd MMM");
     }
 
     private static string FormatLiveWatts(double? watts, bool estimated = false)

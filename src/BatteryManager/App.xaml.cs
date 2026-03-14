@@ -24,12 +24,14 @@ public partial class App : Application
         var oemDetectionService = new OemDetectionService(deviceInfoService);
         var chargeLimitCoordinator = new ChargeLimitCoordinator(oemDetectionService);
         var batteryMonitorService = new BatteryMonitorService(chargeLimitCoordinator);
+        var batteryHistoryService = new BatteryHistoryService();
 
         _mainViewModel = new MainViewModel(
             Dispatcher,
             settings,
             settingsService,
             batteryMonitorService,
+            batteryHistoryService,
             chargeLimitCoordinator);
 
         _mainWindow = new MainWindow

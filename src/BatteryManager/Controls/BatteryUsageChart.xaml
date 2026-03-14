@@ -1,0 +1,42 @@
+<UserControl x:Class="BatteryManager.Controls.BatteryUsageChart"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="52" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+    <Grid Grid.Column="0" Margin="0,18,12,28">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+      <TextBlock Grid.Row="0"
+                 VerticalAlignment="Center"
+                 Text="100%"
+                 Style="{StaticResource UsageAxisTextStyle}" />
+      <TextBlock Grid.Row="1"
+                 VerticalAlignment="Center"
+                 Text="50%"
+                 Style="{StaticResource UsageAxisTextStyle}" />
+    </Grid>
+
+    <Grid Grid.Column="1">
+      <Grid x:Name="ChartGrid" Margin="0,18,0,28">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*" />
+          <RowDefinition Height="*" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Border Grid.Row="0" BorderBrush="{DynamicResource UsageGridBrush}" BorderThickness="0,0,0,1" />
+        <Border Grid.Row="1" BorderBrush="{DynamicResource UsageGridBrush}" BorderThickness="0,0,0,1" />
+      </Grid>
+
+      <Canvas x:Name="ChartCanvas"
+              Margin="0,18,0,28"
+              IsHitTestVisible="False" />
+    </Grid>
+  </Grid>
+</UserControl>

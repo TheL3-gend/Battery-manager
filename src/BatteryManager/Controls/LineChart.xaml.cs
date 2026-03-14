@@ -86,7 +86,7 @@ public partial class LineChart : UserControl
         }
 
         var points = ItemsSource.Cast<HistoricalPoint>().Where(point => point.Value.HasValue).ToList();
-        if (points.Count < 2)
+        if (points.Count == 0)
         {
             LinePath.Data = null;
             FillPath.Data = null;
@@ -94,6 +94,37 @@ public partial class LineChart : UserControl
         }
 
         var max = Math.Max(1, Maximum);
+        var minTimestamp = points.Min(point => point.Timestamp);
+        var maxTimestamp = points.Max(point => point.Timestamp);
+        var totalSpan = Math.Max(1, (maxTimestamp - minTimestamp).TotalSeconds);
+
+        if (points.Count == 1)
+        {
+            var y = ActualHeight - (Math.Clamp(points[0].Value!.Value, 0, max) / max * ActualHeight);
+            var singleGeometry = new StreamGeometry();
+            var singleFillGeometry = new StreamGeometry();
+
+            using (var singleContext = singleGeometry.Open())
+            {
+                singleContext.BeginFigure(new Point(0, y), false, false);
+                singleContext.LineTo(new Point(ActualWidth, y), true, false);
+            }
+
+            using (var singleFillContext = singleFillGeometry.Open())
+            {
+                singleFillContext.BeginFigure(new Point(0, ActualHeight), true, true);
+                singleFillContext.LineTo(new Point(0, y), true, false);
+                singleFillContext.LineTo(new Point(ActualWidth, y), true, false);
+                singleFillContext.LineTo(new Point(ActualWidth, ActualHeight), true, false);
+            }
+
+            singleGeometry.Freeze();
+            singleFillGeometry.Freeze();
+            LinePath.Data = singleGeometry;
+            FillPath.Data = singleFillGeometry;
+            return;
+        }
+
         var geometry = new StreamGeometry();
         var fillGeometry = new StreamGeometry();
 
@@ -103,7 +134,7 @@ public partial class LineChart : UserControl
         for (var index = 0; index < points.Count; index++)
         {
             var point = points[index];
-            var x = index * (ActualWidth / (points.Count - 1));
+            var x = ((point.Timestamp - minTimestamp).TotalSeconds / totalSpan) * ActualWidth;
             var y = ActualHeight - (Math.Clamp(point.Value!.Value, 0, max) / max * ActualHeight);
             var chartPoint = new Point(x, y);
 

@@ -29,3 +29,6 @@ C:\Users\Ilgaz\Documents\Codes\btrymanagerpro\src\BatteryManager\obj\Debug\net8.
 C:\Users\Ilgaz\Documents\Codes\btrymanagerpro\src\BatteryManager\obj\Debug\net8.0-windows10.0.19041.0\BatteryManager.pdb
 C:\Users\Ilgaz\Documents\Codes\btrymanagerpro\src\BatteryManager\obj\Debug\net8.0-windows10.0.19041.0\BatteryManager.genruntimeconfig.cache
 C:\Users\Ilgaz\Documents\Codes\btrymanagerpro\src\BatteryManager\obj\Debug\net8.0-windows10.0.19041.0\ref\BatteryManager.dll
+C:\Users\Ilgaz\Documents\Codes\btrymanagerpro\src\BatteryManager\obj\Debug\net8.0-windows10.0.19041.0\BatteryManager.sourcelink.json
+C:\Users\Ilgaz\Documents\Codes\btrymanagerpro\src\BatteryManager\obj\Debug\net8.0-windows10.0.19041.0\Controls\BatteryUsageChart.baml
+C:\Users\Ilgaz\Documents\Codes\btrymanagerpro\src\BatteryManager\obj\Debug\net8.0-windows10.0.19041.0\Controls\BatteryUsageChart.g.cs

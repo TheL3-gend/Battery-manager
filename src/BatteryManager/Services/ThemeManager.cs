@@ -20,6 +20,13 @@ public static class ThemeManager
         resources["WarningBrush"] = CreateBrush(darkMode ? "#F3B84F" : "#D99224");
         resources["DangerBrush"] = CreateBrush(darkMode ? "#E85C5C" : "#D84C4C");
         resources["BorderBrush"] = CreateBrush(darkMode ? "#8A313A49" : "#AAD6DCE5");
+        resources["UsageHeaderBrush"] = CreateBrush(darkMode ? "#333038" : "#E4E9F0");
+        resources["UsagePanelBrush"] = CreateBrush(darkMode ? "#231F24" : "#F6F8FC");
+        resources["UsageGridBrush"] = CreateBrush(darkMode ? "#6E737B" : "#B8C3D4");
+        resources["UsageAxisBrush"] = CreateBrush(darkMode ? "#C3CBD6" : "#67758A");
+        resources["UsageBarBrush"] = CreateBrush(darkMode ? "#27AFC3" : "#1598B3");
+        resources["UsageChargingBarBrush"] = CreateBrush(darkMode ? "#32C6D6" : "#1EB2C7");
+        resources["UsageBarBorderBrush"] = CreateBrush(darkMode ? "#1D7D8F" : "#1A8EA4");
     }
 
     private static SolidColorBrush CreateBrush(string hex)

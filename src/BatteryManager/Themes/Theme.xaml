@@ -14,6 +14,13 @@
   <SolidColorBrush x:Key="ScrollBarTrackBrush" Color="#80D6DCE5" />
   <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#7F3478F6" />
   <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#A63478F6" />
+  <SolidColorBrush x:Key="UsageHeaderBrush" Color="#262C34" />
+  <SolidColorBrush x:Key="UsagePanelBrush" Color="#1D232C" />
+  <SolidColorBrush x:Key="UsageGridBrush" Color="#40515F72" />
+  <SolidColorBrush x:Key="UsageAxisBrush" Color="#A8B3C2" />
+  <SolidColorBrush x:Key="UsageBarBrush" Color="#2AAFD0" />
+  <SolidColorBrush x:Key="UsageChargingBarBrush" Color="#39C5D6" />
+  <SolidColorBrush x:Key="UsageBarBorderBrush" Color="#2089A8" />
   <SolidColorBrush x:Key="WindowChromeButtonHoverBrush" Color="#223478F6" />
   <SolidColorBrush x:Key="WindowChromeCloseHoverBrush" Color="#33D84C4C" />
 
@@ -107,6 +114,12 @@
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
 
+  <Style x:Key="UsageAxisTextStyle" TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource UsageAxisBrush}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
   <Style x:Key="StatusBadgeStyle" TargetType="Border">
     <Setter Property="Padding" Value="11,7" />
     <Setter Property="CornerRadius" Value="12" />
@@ -172,6 +185,18 @@
     <Setter Property="Foreground" Value="White" />
     <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+  </Style>
+
+  <Style x:Key="HistoryRangeButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="MinWidth" Value="58" />
+    <Style.Triggers>
+      <Trigger Property="Tag" Value="True">
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      </Trigger>
+    </Style.Triggers>
   </Style>
 
   <Style x:Key="PremiumCheckBoxStyle" TargetType="CheckBox">
