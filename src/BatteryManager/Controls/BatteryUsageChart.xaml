@@ -12,6 +12,7 @@
         <RowDefinition Height="*" />
         <RowDefinition Height="*" />
         <RowDefinition Height="*" />
+        <RowDefinition Height="*" />
       </Grid.RowDefinitions>
       <TextBlock Grid.Row="0"
                  VerticalAlignment="Center"
@@ -19,19 +20,41 @@
                  Style="{StaticResource UsageAxisTextStyle}" />
       <TextBlock Grid.Row="1"
                  VerticalAlignment="Center"
+                 Text="75%"
+                 Style="{StaticResource UsageAxisTextStyle}" />
+      <TextBlock Grid.Row="2"
+                 VerticalAlignment="Center"
                  Text="50%"
+                 Style="{StaticResource UsageAxisTextStyle}" />
+      <TextBlock Grid.Row="3"
+                 VerticalAlignment="Bottom"
+                 Text="0%"
                  Style="{StaticResource UsageAxisTextStyle}" />
     </Grid>
 
     <Grid Grid.Column="1">
+      <Border Margin="0,10,0,20"
+              CornerRadius="16"
+              BorderBrush="{DynamicResource UsageSummaryBorderBrush}"
+              BorderThickness="1">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Offset="0" Color="#223041" />
+            <GradientStop Offset="1" Color="#18232F" />
+          </LinearGradientBrush>
+        </Border.Background>
+      </Border>
+
       <Grid x:Name="ChartGrid" Margin="0,18,0,28">
         <Grid.RowDefinitions>
+          <RowDefinition Height="*" />
           <RowDefinition Height="*" />
           <RowDefinition Height="*" />
           <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Border Grid.Row="0" BorderBrush="{DynamicResource UsageGridBrush}" BorderThickness="0,0,0,1" />
         <Border Grid.Row="1" BorderBrush="{DynamicResource UsageGridBrush}" BorderThickness="0,0,0,1" />
+        <Border Grid.Row="2" BorderBrush="{DynamicResource UsageGridBrush}" BorderThickness="0,0,0,1" />
       </Grid>
 
       <Canvas x:Name="ChartCanvas"

@@ -244,7 +244,7 @@
                   Grid.RowSpan="2"
                   Margin="0,16,0,0"
                   CornerRadius="18"
-                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderBrush="{DynamicResource UsagePanelBorderBrush}"
                   BorderThickness="1"
                   Background="{DynamicResource UsagePanelBrush}">
             <Grid>
@@ -266,7 +266,7 @@
                   </Grid.ColumnDefinitions>
                   <Path Width="26"
                         Height="26"
-                        Stroke="{DynamicResource PrimaryTextBrush}"
+                        Stroke="{DynamicResource UsageHeaderTextBrush}"
                         StrokeThickness="1.9"
                         StrokeLineJoin="Round"
                         StrokeStartLineCap="Round"
@@ -276,12 +276,12 @@
                              Margin="14,0,0,0"
                              VerticalAlignment="Center"
                              Text="Battery usage"
-                             Style="{StaticResource SectionTitleStyle}" />
+                             Style="{StaticResource UsageTitleTextStyle}" />
                   <Path Grid.Column="2"
                         Width="16"
                         Height="16"
                         VerticalAlignment="Center"
-                        Stroke="{DynamicResource PrimaryTextBrush}"
+                        Stroke="{DynamicResource UsageMutedTextBrush}"
                         StrokeThickness="1.8"
                         StrokeStartLineCap="Round"
                         StrokeEndLineCap="Round"
@@ -294,18 +294,23 @@
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="Battery levels" Style="{StaticResource SectionTitleStyle}" />
+                <StackPanel>
+                  <TextBlock Text="Battery levels" Style="{StaticResource UsageTitleTextStyle}" />
+                  <TextBlock Margin="0,6,0,0"
+                             Text="{Binding BatteryHistoryResolutionLabel}"
+                             Style="{StaticResource UsageCaptionTextStyle}" />
+                </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                   <TextBlock Margin="0,0,12,0"
                              VerticalAlignment="Center"
                              Text="Time period:"
-                             Style="{StaticResource BodyTextStyle}" />
+                             Style="{StaticResource UsageBodyTextStyle}" />
                   <Border Padding="12,8"
                           CornerRadius="10"
-                          Background="{DynamicResource CardSecondaryBrush}"
-                          BorderBrush="{DynamicResource BorderBrush}"
+                          Background="{DynamicResource UsageSummaryBrush}"
+                          BorderBrush="{DynamicResource UsageSummaryBorderBrush}"
                           BorderThickness="1">
-                    <TextBlock Text="{Binding BatteryHistoryCaption}" Style="{StaticResource BodyTextStyle}" />
+                    <TextBlock Text="{Binding BatteryHistoryCaption}" Style="{StaticResource UsageBodyTextStyle}" />
                   </Border>
                   <Button Margin="10,0,0,0"
                           Content="24h"
@@ -351,39 +356,70 @@
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <StackPanel>
-                  <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="Auto" />
-                      <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Current level" Style="{StaticResource SectionTitleStyle}" />
-                    <TextBlock Grid.Column="1" Margin="16,0,0,0" Text="{Binding BatteryUsageCurrentLabel}" Style="{StaticResource BodyTextStyle}" />
-                  </Grid>
-                  <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="Auto" />
-                      <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Lowest level" Style="{StaticResource SectionTitleStyle}" />
-                    <TextBlock Grid.Column="1" Margin="16,0,0,0" Text="{Binding BatteryUsageLowLabel}" Style="{StaticResource BodyTextStyle}" />
-                  </Grid>
-                  <Grid>
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="Auto" />
-                      <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Highest level" Style="{StaticResource SectionTitleStyle}" />
-                    <TextBlock Grid.Column="1" Margin="16,0,0,0" Text="{Binding BatteryUsageHighLabel}" Style="{StaticResource BodyTextStyle}" />
-                  </Grid>
+                  <UniformGrid Columns="3">
+                    <Border Margin="0,0,10,0" Style="{StaticResource UsageMetricCardStyle}">
+                      <StackPanel>
+                        <TextBlock Text="Current" Style="{StaticResource UsageCaptionTextStyle}" />
+                        <TextBlock Margin="0,6,0,0" Text="{Binding BatteryUsageCurrentLabel}" Style="{StaticResource UsageTitleTextStyle}" />
+                      </StackPanel>
+                    </Border>
+                    <Border Margin="0,0,10,0" Style="{StaticResource UsageMetricCardStyle}">
+                      <StackPanel>
+                        <TextBlock Text="Lowest" Style="{StaticResource UsageCaptionTextStyle}" />
+                        <TextBlock Margin="0,6,0,0" Text="{Binding BatteryUsageLowLabel}" Style="{StaticResource UsageTitleTextStyle}" />
+                      </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource UsageSummaryAccentBrush}"
+                            BorderBrush="{DynamicResource UsageSummaryBorderBrush}"
+                            BorderThickness="1"
+                            Style="{StaticResource UsageMetricCardStyle}">
+                      <StackPanel>
+                        <TextBlock Text="Highest" Style="{StaticResource UsageCaptionTextStyle}" />
+                        <TextBlock Margin="0,6,0,0" Text="{Binding BatteryUsageHighLabel}" Style="{StaticResource UsageTitleTextStyle}" />
+                      </StackPanel>
+                    </Border>
+                  </UniformGrid>
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
-                  <TextBlock HorizontalAlignment="Right" Text="{Binding BatteryUsageStateLabel}" Style="{StaticResource SectionTitleStyle}" />
-                  <TextBlock Margin="0,8,0,0" HorizontalAlignment="Right" Text="{Binding BatteryHistoryCaption}" Style="{StaticResource BodyTextStyle}" />
-                  <TextBlock Margin="0,8,0,0" HorizontalAlignment="Right" Text="{Binding BatteryUsageFlowLabel}" Style="{StaticResource BodyTextStyle}" />
+                <StackPanel Grid.Column="1" Margin="20,0,20,0" VerticalAlignment="Bottom">
+                  <StackPanel Orientation="Horizontal">
+                    <Border Width="12"
+                            Height="12"
+                            CornerRadius="6"
+                            Background="{DynamicResource UsageBarBrush}"
+                            BorderBrush="{DynamicResource UsageBarBorderBrush}"
+                            BorderThickness="1" />
+                    <TextBlock Margin="8,0,0,0" Text="On battery" Style="{StaticResource UsageBodyTextStyle}" />
+                  </StackPanel>
+                  <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                    <Border Width="12"
+                            Height="12"
+                            CornerRadius="6"
+                            Background="{DynamicResource UsageChargingBarBrush}"
+                            BorderBrush="{DynamicResource UsageBarBorderBrush}"
+                            BorderThickness="1" />
+                    <TextBlock Margin="8,0,0,0" Text="Charging" Style="{StaticResource UsageBodyTextStyle}" />
+                  </StackPanel>
+                  <TextBlock Margin="0,12,0,0" Text="{Binding BatteryUsageSamplesLabel}" Style="{StaticResource UsageCaptionTextStyle}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                  <TextBlock HorizontalAlignment="Right" Text="{Binding BatteryUsageStateLabel}" Style="{StaticResource UsageTitleTextStyle}" />
+                  <TextBlock Margin="0,8,0,0" HorizontalAlignment="Right" Text="{Binding BatteryHistoryCaption}" Style="{StaticResource UsageBodyTextStyle}" />
+                  <Border Margin="0,10,0,0"
+                          Padding="10,6"
+                          CornerRadius="10"
+                          Background="{DynamicResource UsageSummaryBrush}"
+                          BorderBrush="{DynamicResource UsageSummaryBorderBrush}"
+                          BorderThickness="1">
+                    <TextBlock HorizontalAlignment="Right"
+                               Text="{Binding BatteryUsageFlowLabel}"
+                               Style="{StaticResource UsageBodyTextStyle}" />
+                  </Border>
                 </StackPanel>
               </Grid>
             </Grid>

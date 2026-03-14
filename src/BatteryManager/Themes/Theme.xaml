@@ -16,11 +16,17 @@
   <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#A63478F6" />
   <SolidColorBrush x:Key="UsageHeaderBrush" Color="#262C34" />
   <SolidColorBrush x:Key="UsagePanelBrush" Color="#1D232C" />
+  <SolidColorBrush x:Key="UsagePanelBorderBrush" Color="#314252" />
+  <SolidColorBrush x:Key="UsageSummaryBrush" Color="#223242" />
+  <SolidColorBrush x:Key="UsageSummaryAccentBrush" Color="#2E465D" />
+  <SolidColorBrush x:Key="UsageSummaryBorderBrush" Color="#42607A" />
   <SolidColorBrush x:Key="UsageGridBrush" Color="#40515F72" />
   <SolidColorBrush x:Key="UsageAxisBrush" Color="#A8B3C2" />
-  <SolidColorBrush x:Key="UsageBarBrush" Color="#2AAFD0" />
-  <SolidColorBrush x:Key="UsageChargingBarBrush" Color="#39C5D6" />
-  <SolidColorBrush x:Key="UsageBarBorderBrush" Color="#2089A8" />
+  <SolidColorBrush x:Key="UsageBarBrush" Color="#7AB6FF" />
+  <SolidColorBrush x:Key="UsageChargingBarBrush" Color="#5EE0A0" />
+  <SolidColorBrush x:Key="UsageBarBorderBrush" Color="#B9D8FF" />
+  <SolidColorBrush x:Key="UsageHeaderTextBrush" Color="#F5F8FC" />
+  <SolidColorBrush x:Key="UsageMutedTextBrush" Color="#93A7BE" />
   <SolidColorBrush x:Key="WindowChromeButtonHoverBrush" Color="#223478F6" />
   <SolidColorBrush x:Key="WindowChromeCloseHoverBrush" Color="#33D84C4C" />
 
@@ -118,6 +124,26 @@
     <Setter Property="Foreground" Value="{DynamicResource UsageAxisBrush}" />
     <Setter Property="FontSize" Value="12" />
     <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style x:Key="UsageTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource SectionTitleStyle}">
+    <Setter Property="Foreground" Value="{DynamicResource UsageHeaderTextBrush}" />
+  </Style>
+
+  <Style x:Key="UsageBodyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextStyle}">
+    <Setter Property="Foreground" Value="{DynamicResource UsageMutedTextBrush}" />
+  </Style>
+
+  <Style x:Key="UsageCaptionTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextStyle}">
+    <Setter Property="Foreground" Value="{DynamicResource UsageMutedTextBrush}" />
+  </Style>
+
+  <Style x:Key="UsageMetricCardStyle" TargetType="Border">
+    <Setter Property="Padding" Value="14,12" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Background" Value="{DynamicResource UsageSummaryBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource UsageSummaryBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
   </Style>
 
   <Style x:Key="StatusBadgeStyle" TargetType="Border">

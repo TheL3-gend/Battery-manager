@@ -51,6 +51,7 @@ public partial class BatteryUsageChart : UserControl
     {
         if (ItemsSource is null || ChartCanvas.ActualWidth <= 0 || ChartCanvas.ActualHeight <= 0)
         {
+            ChartCanvas.Children.Clear();
             return;
         }
 
@@ -63,9 +64,9 @@ public partial class BatteryUsageChart : UserControl
         }
 
         var barCount = entries.Count;
-        var spacing = barCount > 32 ? 5d : 10d;
+        var spacing = barCount > 120 ? 1d : barCount > 72 ? 2d : 3d;
         var totalGap = Math.Max(0, (barCount - 1) * spacing);
-        var barWidth = Math.Max(8, Math.Min(18, (ChartCanvas.ActualWidth - totalGap) / barCount));
+        var barWidth = Math.Max(1.5, (ChartCanvas.ActualWidth - totalGap) / barCount);
         var usedWidth = (barWidth * barCount) + totalGap;
         var x = Math.Max(0, (ChartCanvas.ActualWidth - usedWidth) / 2);
 
@@ -75,16 +76,18 @@ public partial class BatteryUsageChart : UserControl
 
         foreach (var entry in entries)
         {
-            var height = Math.Max(6, (entry.BatteryPercent / 100d) * ChartCanvas.ActualHeight);
+            var normalizedPercent = Math.Clamp(entry.BatteryPercent, 0, 100);
+            var height = Math.Max(4, (normalizedPercent / 100d) * ChartCanvas.ActualHeight);
+            var radius = Math.Min(4, Math.Max(1, barWidth / 2));
             var rectangle = new Rectangle
             {
                 Width = barWidth,
                 Height = height,
-                RadiusX = barWidth / 2,
-                RadiusY = barWidth / 2,
+                RadiusX = radius,
+                RadiusY = radius,
                 Fill = entry.IsCharging ? chargingBrush : barBrush,
                 Stroke = barBorderBrush,
-                StrokeThickness = 1
+                StrokeThickness = barWidth > 4 ? 1 : 0
             };
 
             Canvas.SetLeft(rectangle, x);

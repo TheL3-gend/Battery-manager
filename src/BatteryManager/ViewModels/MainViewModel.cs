@@ -123,9 +123,15 @@ public sealed class MainViewModel : BindableBase, IDisposable
     public string BatteryHistoryCaption => SelectedBatteryHistoryPeriod == BatteryHistoryPeriod.Day
         ? "Last 24 hours"
         : "Last 7 days";
+    public string BatteryHistoryResolutionLabel => SelectedBatteryHistoryPeriod == BatteryHistoryPeriod.Day
+        ? "15-minute intervals"
+        : "Hourly intervals";
     public string BatteryUsageCurrentLabel => _latestSnapshot?.BatteryPercent is null ? "--" : $"{_latestSnapshot.BatteryPercent:0}%";
     public string BatteryUsageLowLabel => BatteryUsageHistory.Count == 0 ? "--" : $"{BatteryUsageHistory.Min(point => point.BatteryPercent):0}%";
     public string BatteryUsageHighLabel => BatteryUsageHistory.Count == 0 ? "--" : $"{BatteryUsageHistory.Max(point => point.BatteryPercent):0}%";
+    public string BatteryUsageSamplesLabel => BatteryUsageHistory.Count == 0
+        ? "Waiting for history"
+        : $"{BatteryUsageHistory.Count} samples shown";
     public string BatteryUsageStateLabel => _latestSnapshot is null
         ? "Waiting for telemetry"
         : _latestSnapshot.IsCharging
@@ -385,6 +391,7 @@ public sealed class MainViewModel : BindableBase, IDisposable
                 RaisePropertyChanged(nameof(IsDayHistorySelected));
                 RaisePropertyChanged(nameof(IsWeekHistorySelected));
                 RaisePropertyChanged(nameof(BatteryHistoryCaption));
+                RaisePropertyChanged(nameof(BatteryHistoryResolutionLabel));
                 RaisePropertyChanged(nameof(BatteryUsageAxisStartLabel));
                 RaisePropertyChanged(nameof(BatteryUsageAxisQuarterLabel));
                 RaisePropertyChanged(nameof(BatteryUsageAxisMidLabel));
@@ -554,6 +561,7 @@ public sealed class MainViewModel : BindableBase, IDisposable
 
         RaisePropertyChanged(nameof(BatteryUsageLowLabel));
         RaisePropertyChanged(nameof(BatteryUsageHighLabel));
+        RaisePropertyChanged(nameof(BatteryUsageSamplesLabel));
     }
 
     private string FormatAxisLabel(double progress)

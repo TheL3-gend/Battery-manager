@@ -59,33 +59,60 @@ public sealed class BatteryHistoryService
             ? TimeSpan.FromHours(24)
             : TimeSpan.FromDays(7);
 
-        var cutoff = DateTime.Now - range;
-        var recentEntries = _entries
-            .Where(entry => entry.Timestamp >= cutoff)
+        var bucketCount = period == BatteryHistoryPeriod.Day ? 96 : 168;
+        var bucketSize = TimeSpan.FromTicks(range.Ticks / bucketCount);
+        var now = DateTime.Now;
+        var cutoff = now - range;
+        var orderedEntries = _entries
             .OrderBy(entry => entry.Timestamp)
             .ToList();
 
-        if (recentEntries.Count == 0)
+        if (orderedEntries.Count == 0)
         {
             return [];
         }
 
-        var maxPoints = period == BatteryHistoryPeriod.Day ? 96 : 168;
-        if (recentEntries.Count <= maxPoints)
+        var carryForward = orderedEntries.LastOrDefault(entry => entry.Timestamp < cutoff);
+        var recentEntries = orderedEntries
+            .Where(entry => entry.Timestamp >= cutoff)
+            .ToList();
+
+        if (recentEntries.Count == 0 && carryForward is null)
         {
-            return recentEntries;
+            return [];
         }
 
-        var stride = (double)(recentEntries.Count - 1) / (maxPoints - 1);
-        var sampledPoints = new List<BatteryHistoryEntry>(maxPoints);
-        for (var index = 0; index < maxPoints; index++)
+        carryForward ??= recentEntries.FirstOrDefault();
+
+        var bucketedEntries = new List<BatteryHistoryEntry>(bucketCount);
+        var entryIndex = 0;
+        var lastKnownEntry = carryForward;
+
+        for (var bucketIndex = 0; bucketIndex < bucketCount; bucketIndex++)
         {
-            var sourceIndex = Math.Min(recentEntries.Count - 1, (int)Math.Round(index * stride));
-            var entry = recentEntries[sourceIndex];
-            sampledPoints.Add(entry);
+            var bucketStart = cutoff + TimeSpan.FromTicks(bucketSize.Ticks * bucketIndex);
+            var bucketEnd = bucketIndex == bucketCount - 1
+                ? now
+                : bucketStart + bucketSize;
+
+            while (entryIndex < recentEntries.Count && recentEntries[entryIndex].Timestamp <= bucketEnd)
+            {
+                lastKnownEntry = recentEntries[entryIndex];
+                entryIndex++;
+            }
+
+            if (lastKnownEntry is null)
+            {
+                continue;
+            }
+
+            bucketedEntries.Add(new BatteryHistoryEntry(
+                bucketEnd,
+                lastKnownEntry.BatteryPercent,
+                lastKnownEntry.IsCharging));
         }
 
-        return sampledPoints;
+        return bucketedEntries;
     }
 
     private List<BatteryHistoryEntry> LoadEntries()
